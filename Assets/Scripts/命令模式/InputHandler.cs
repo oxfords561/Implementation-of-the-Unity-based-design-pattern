@@ -18,6 +18,8 @@ public class InputHandler : MonoBehaviour {
     private Receiver receiver;
     private List<MoveCommand> commands = new List<MoveCommand>();
     private int currentCommandNum = 0;
+    private bool isUndo = false;
+
 
     /// <summary>
     /// 点击向上按钮
@@ -44,12 +46,21 @@ public class InputHandler : MonoBehaviour {
     /// </summary>
     public void OnRedoClickEvent()
     {
-         if (currentCommandNum <= commands.Count)
+         if (currentCommandNum <= commands.Count && currentCommandNum > 0)
         {
             MoveCommand moveCommand = commands[currentCommandNum - 1];
-            commands.Add(moveCommand);
-            currentCommandNum++;
-            moveCommand.Execute();
+            if (isUndo)
+            {
+                currentCommandNum--;
+                moveCommand.UnExecute();
+            }
+            else
+            {
+                commands.Add(moveCommand);
+                currentCommandNum++;
+                moveCommand.Execute();
+            }
+            
         }
     }
 
@@ -60,15 +71,28 @@ public class InputHandler : MonoBehaviour {
     {
         if (currentCommandNum > 0)
         {
-            currentCommandNum--;
-            MoveCommand moveCommand = commands[currentCommandNum];
+            isUndo = true;
+            print("num "+currentCommandNum);
+            MoveCommand moveCommand = commands[currentCommandNum - 1];
             moveCommand.UnExecute();
+            for (int i = 0; i < commands.Count; i++)
+            {
+                print(commands[i]._type.ToString());
+            }
+
+            //commands.Remove(moveCommand);
+            currentCommandNum--;
             print("<< " + moveCommand._type.ToString());
         }
     }
 
     void Move(ActionType type,Receiver receiver)
     {
+        if (isUndo)
+        {
+            commands.RemoveRange(currentCommandNum,commands.Count - currentCommandNum);
+        }
+        isUndo = false;
         MoveCommand moveCommand = new MoveCommand(type,receiver);
         moveCommand.Execute();
         commands.Add(moveCommand);
